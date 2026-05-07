@@ -1,0 +1,14 @@
+{
+  "name": "docflow",
+  "owner": {
+    "name": "linfx7"
+  },
+  "plugins": [
+    {
+      "name": "docflow",
+      "source": "./",
+      "description": "Keep feature documentation in sync with code.",
+      "version": "1.0.0"
+    }
+  ]
+}

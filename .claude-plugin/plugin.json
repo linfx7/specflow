@@ -1,0 +1,8 @@
+{
+  "name": "docflow",
+  "description": "Keep feature documentation in sync with code.",
+  "version": "1.0.0",
+  "author": {
+    "name": "linfx7"
+  }
+}
