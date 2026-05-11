@@ -10,8 +10,8 @@ Two modes: **flow** (normal, consumes brainstorm) and **amend** (targeted update
 ## Pre-check
 
 1. Determine mode from invocation:
-   - **Flow**: no `--amend` argument. Run `bash scripts/precheck.sh flow-active`. Non-zero exit → STOP and print the script's stderr verbatim.
-   - **Amend**: `--amend <feature-id>` or a list of feature IDs was provided. Run `bash scripts/precheck.sh no-state`. Non-zero exit → STOP and print the script's stderr verbatim.
+   - **Flow**: no `--amend` argument. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/precheck.sh flow-active`. Non-zero exit → STOP and print the script's stderr verbatim.
+   - **Amend**: `--amend <feature-id>` or a list of feature IDs was provided. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/precheck.sh no-state`. Non-zero exit → STOP and print the script's stderr verbatim.
 
 ## Steps
 

@@ -6,13 +6,13 @@ allowed-tools: [Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion]
 
 ## Pre-check
 
-Run `bash scripts/precheck.sh no-state`. Non-zero exit → STOP and print the script's stderr verbatim.
+Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/precheck.sh no-state`. Non-zero exit → STOP and print the script's stderr verbatim.
 
 ## Steps
 
 ### Scan for drift
 
-Run `bash scripts/detect-drift.sh`. Exit codes:
+Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/detect-drift.sh`. Exit codes:
 
 - `0` — repo is in sync. Tell the user everything is consistent and STOP.
 - `10` — drift records on stdout (see format below). Continue.

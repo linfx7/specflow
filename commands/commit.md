@@ -6,7 +6,7 @@ allowed-tools: [Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion]
 
 ## Pre-check
 
-Run `bash scripts/precheck.sh free-active`. Non-zero exit → STOP and print the script's stderr verbatim.
+Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/precheck.sh free-active`. Non-zero exit → STOP and print the script's stderr verbatim.
 
 ## Steps
 

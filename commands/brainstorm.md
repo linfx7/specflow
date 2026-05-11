@@ -6,7 +6,7 @@ allowed-tools: [Read, Glob, Grep, Bash, AskUserQuestion, Write]
 
 ## Pre-check
 
-Run `bash scripts/precheck.sh no-state`. Non-zero exit → STOP and print the script's stderr verbatim.
+Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/precheck.sh no-state`. Non-zero exit → STOP and print the script's stderr verbatim.
 
 ## Steps
 
