@@ -6,8 +6,7 @@ allowed-tools: [Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent, Ent
 
 ## Pre-check
 
-1. `docs/INDEX.md` missing → STOP: "docflow is not initialized. Run `/docflow:init` first."
-2. `.docflow/state` exists → STOP: "A session is already active. Run `/docflow:plan` (flow) or `/docflow:commit` (free) to finish it, or delete `.docflow/state` to discard it."
+Run `bash scripts/precheck.sh no-state`. Non-zero exit → STOP and print the script's stderr verbatim.
 
 ## Steps
 
@@ -43,20 +42,25 @@ Before entering any worktree, remember the **starting branch** (via `git rev-par
 - Transform each acceptance criterion into a verifiable goal
 - Run tests/builds after each significant change
 
-Once the user's code changes are committed inside the worktree, update documentation from the **committed** state:
+Once the user's code changes are committed inside the worktree, update documentation from the **committed** state by invoking the reconcile subroutine in `references/reconcile.md` with:
 
-1. Enumerate changed files via `git diff --name-status <base-branch> HEAD`.
-2. Reconcile the current feature's `## Associated Files` / `## Tests` per the "Name-status reconciliation" rule in conventions.
-3. Check off completed acceptance criteria. Add a change history entry (see conventions for format).
-4. **Cross-feature hash refresh**: for each changed production file also listed in another feature's `## Associated Files`, refresh that feature's hash only — no description or change-history updates (contract hasn't changed). If contract classification flags any other feature as actually affected (precheck miss) → STOP and tell the user to run `/docflow:plan --amend <other-feature-id>` first. Leave the worktree and its branch intact; after the amend the user can merge the worktree manually or discard it and re-run `/docflow:implement`.
-5. **Orphan test capture**: for any test files with code `A` (added) not listed in any feature's `## Tests`, append to the current feature's `## Tests`. Flag in the completion summary for user review.
-6. Commit the feature-doc updates inside the worktree (a distinct commit is fine). Do NOT touch `docs/INDEX.md` in the worktree — INDEX status writes only happen on the starting branch to avoid parallel-merge conflicts. `ExitWorktree` with `action: "keep"`.
+- `<changeset>` = `git diff --name-status <base-branch> HEAD`
+- `<base>` = `<base-branch>`
+- `allow_skip = false` — implement must document everything the user changed
+- `may_rewrite_contract = false` — contract-breaking findings for the current feature OR any other feature mean the precheck missed drift; STOP and tell the user to run `/docflow:plan --amend <feature-id>` first. Leave the worktree and its branch intact; after the amend the user can merge the worktree manually or discard it and re-run `/docflow:implement`.
+
+Then:
+
+1. Check off completed `## Acceptance Criteria` on the current feature's doc. Reconcile's change-history entry covers the doc update; add feature-specific wording if the auto entry is too generic.
+2. Commit the feature-doc updates inside the worktree (a distinct commit is fine). Do NOT touch `docs/INDEX.md` in the worktree — INDEX status writes only happen on the starting branch to avoid parallel-merge conflicts. `ExitWorktree` with `action: "keep"`.
+
+Reconcile's Step 3 handles cross-feature hash refresh and its "Orphan test capture" — any test files added with code `A` not listed elsewhere get appended to the current feature's `## Tests` via the Step 1 "create new / assign to existing" prompt; surface the additions in the completion summary for user review.
 
 **Merge and clean up** (on the starting branch):
 
 1. `git merge --no-ff <worktree-branch>`. Conflicts → STOP: print the conflict files, leave the worktree branch intact, instruct the user to resolve manually — do not attempt automated resolution. After resolving, the user commits the merge and runs `/docflow:sync` to reconcile INDEX status and hashes.
 2. Update `docs/INDEX.md`: status → `active` for every feature in this single/bundle unit. Commit as a follow-up on the starting branch.
-3. Run the shared-file hash divergence check (see `sync.md` step 2). Any divergence must be auto-refreshed to the disk-matching hash before reporting done; commit the refresh as a follow-up on the starting branch if needed.
+3. Run the shared-file hash divergence check (reconcile Step 4 in `references/reconcile.md`). Any divergence must be auto-refreshed to the disk-matching hash before reporting done; commit the refresh as a follow-up on the starting branch if needed.
 4. `git worktree remove <worktree-path>` and `git branch -d <worktree-branch>`.
 5. Report: feature ID(s), merge commit SHA, files touched.
 

@@ -9,10 +9,9 @@ Two modes: **flow** (normal, consumes brainstorm) and **amend** (targeted update
 
 ## Pre-check
 
-1. `docs/INDEX.md` missing → STOP: "docflow is not initialized. Run `/docflow:init` first."
-2. Determine mode:
-   - **Flow**: `.docflow/state` exists with `mode=flow`. Branch must match state's `branch`. If state exists with another mode or branch mismatches, STOP with the appropriate hint.
-   - **Amend**: no state file AND user invoked with `--amend <feature-id>` or a list of feature IDs. Skip brainstorm reading.
+1. Determine mode from invocation:
+   - **Flow**: no `--amend` argument. Run `bash scripts/precheck.sh flow-active`. Non-zero exit → STOP and print the script's stderr verbatim.
+   - **Amend**: `--amend <feature-id>` or a list of feature IDs was provided. Run `bash scripts/precheck.sh no-state`. Non-zero exit → STOP and print the script's stderr verbatim.
 
 ## Steps
 

@@ -6,65 +6,66 @@ allowed-tools: [Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion]
 
 ## Pre-check
 
-1. `docs/INDEX.md` missing → STOP: "docflow is not initialized. Run `/docflow:init` first."
-2. `.docflow/state` exists → STOP: "A session is already active. Run `/docflow:plan` (flow) or `/docflow:commit` (free) to finish it, or delete `.docflow/state` to discard it."
+Run `bash scripts/precheck.sh no-state`. Non-zero exit → STOP and print the script's stderr verbatim.
 
 ## Steps
 
-### Read current state
+### Scan for drift
 
-Read `references/conventions.md`, `docs/INDEX.md`, and all feature docs in parallel. Collect associated file paths + hashes (from `## Associated Files`) and test file paths (from `## Tests`).
+Run `bash scripts/detect-drift.sh`. Exit codes:
 
-Malformed `docs/INDEX.md` YAML frontmatter → STOP and show the parse error.
+- `0` — repo is in sync. Tell the user everything is consistent and STOP.
+- `10` — drift records on stdout (see format below). Continue.
+- `2` — fatal (missing INDEX, git failure). STOP and print stderr.
 
-### Detect inconsistencies
+Each stdout line is TAB-separated: `kind\tfeature\tpath\textra1\textra2`. Kinds:
 
-Run all checks. Nothing found → tell the user everything is in sync and STOP.
+| Kind | Meaning |
+|------|---------|
+| `HASH_MISMATCH` | `feature` recorded `extra1`, disk has `extra2`. Needs contract classification. |
+| `SHARED_DIVERGE` | `path` appears in multiple features with divergent hashes; disk hash in `extra1`; feature:hash pairs in `extra2`. |
+| `MISSING_FILE` | `path` listed under `feature`'s `## Associated Files` but gone from disk. |
+| `UNTRACKED_SRC` | `path` is a source file on disk, listed in no feature's `## Associated Files`. |
+| `MISSING_TEST` | test `path` listed under `feature`'s `## Tests` but gone from disk. |
+| `ORPHAN_TEST` | test `path` on disk not in any feature's `## Tests`. |
+| `ORPHAN_DOC` | doc at `path` has no INDEX entry. |
+| `MISSING_DOC` | INDEX lists `feature` but no doc file exists. |
+| `DUP_ID` | `path` column holds a duplicated feature ID. |
 
-**Production code checks (`## Associated Files`):**
+### Classify and resolve
 
-1. **Hash mismatch**: compute current hash for each associated file. For each mismatch, collect its content in a single parallel batch, then apply contract classification (see conventions):
-   - **Hash-only drift**: contract still holds
-   - **Likely contract drift**: contract broken; capture a 1-2 sentence reason
-2. **Shared-file hash divergence**: for files listed in more than one feature's `## Associated Files`, compare the recorded hashes across features. Differences (regardless of disk match) mean some feature missed a cross-feature refresh. Pick the hash that matches disk as the truth; if none matches, treat as regular hash mismatch and require user choice during resolve.
-3. **Missing files**: associated files that no longer exist. Flag partial if only some files of a feature are deleted.
-4. **Possible renames**: cross-reference missing files with untracked files — match by similar name or identical content hash. Flag as rename rather than delete + add.
-5. **Untracked source files**: run `git ls-files --cached --others --exclude-standard`, then partition. Exclude non-source patterns (see conventions) and test file patterns (handled below). Source files not listed in any feature's `## Associated Files` are untracked.
+Read `references/conventions.md` and `references/reconcile.md` once. Then:
 
-**Test file checks (`## Tests`):**
+**Automatic (no prompt):**
 
-6. **Missing tests**: test files listed in `## Tests` that no longer exist on disk.
-7. **Orphan tests**: test files (see conventions) on disk not listed in any feature's `## Tests`. Reuse the `git ls-files` output from step 5.
+- `HASH_MISMATCH` where the disk hash matches **another** feature's `SHARED_DIVERGE` truth-hash → refresh stale entries to the truth-hash.
+- `SHARED_DIVERGE` with a disk-match hash (`extra1` not `-`) → auto-refresh all non-matching entries to `extra1`. No change-history entry (contract hasn't moved).
 
-**Feature-level checks:**
+**Needs LLM judgment:**
 
-8. **Status mismatch**: `active` or `amended` features whose associated files are all deleted, or `deprecated` features with live code. Also, `amended` features whose latest `[contract]` change history entry has all its implied `## Acceptance Criteria` checked — code caught up, status should be `active`.
-9. **Stale planned**: `planned` features with no associated files and no change history updates in 30+ days.
+- Remaining `HASH_MISMATCH` — for each, read the file and classify against the feature's `## Behavioral Contract`:
+  - **Hash-only drift** → refresh hash silently.
+  - **Likely contract drift** → do NOT refresh hash; add to contract-drift output.
+  - Unsure → default to hash-only; note in summary.
+- `MISSING_FILE` — check `UNTRACKED_SRC` for same-content-hash or similar-name match. Match → treat as rename; update path, refresh hash. No match → `AskUserQuestion`: (a) remove from associations (b) deprecate feature if all associated files are gone (c) skip.
+- `UNTRACKED_SRC` that didn't rename-match → `AskUserQuestion`: (a) assign to existing feature (b) create new feature (template from `references/feature-template.md`) (c) ignore.
+- `MISSING_TEST` → `AskUserQuestion`: (a) remove from `## Tests` (b) keep (c) skip.
+- `ORPHAN_TEST` → `AskUserQuestion`: (a) add to existing feature's `## Tests` (b) create new feature (c) ignore.
+- `ORPHAN_DOC` → `AskUserQuestion`: (a) add to INDEX.md (b) delete doc (c) skip.
+- `MISSING_DOC` → `AskUserQuestion`: (a) create from template (b) remove INDEX entry (c) skip.
+- `DUP_ID` → `AskUserQuestion`: (a) reassign one to a new ID (b) skip.
 
-**Index integrity checks:**
+Sync **never** rewrites `## Behavioral Contract`. Contract-breaking findings route to `/docflow:plan --amend` via the contract-drift output (see `may_rewrite_contract = false` in `references/reconcile.md`).
 
-10. **INDEX/doc mismatch**: docs in `docs/features/` without INDEX entry, or INDEX entries without a doc file.
-11. **Duplicate IDs**: same ID used by multiple features in INDEX.md.
+### Feature-level checks (no script coverage)
 
-### Resolve
+These need INDEX + feature-doc reading, not just drift scanning:
 
-| Issue | Resolution |
-|-------|------------|
-| Hash-only drift | Auto-refresh hash (no prompt) |
-| Likely contract drift | Do NOT refresh hash. Emit a contract-drift follow-up entry (see conventions). |
-| Shared-file hash divergence (one hash matches disk) | Auto-refresh all stale entries to the matching hash (no prompt) |
-| Shared-file hash divergence (none matches disk) | Handled as Hash mismatch above — one classification, then refresh all features together |
-| Missing files | (a) Remove from associations (b) Deprecate feature (c) Skip |
-| Possible rename | (a) Update path + refresh hash (b) Treat as delete + add (c) Skip |
-| Untracked source file | (a) Associate with existing feature (b) Create new feature (template from `references/feature-template.md`) (c) Ignore |
-| Missing tests | (a) Remove from `## Tests` (b) Keep (c) Skip |
-| Orphan test | (a) Add to existing feature's `## Tests` (b) Create new feature (c) Ignore |
-| Status mismatch | (a) Update status (b) Skip |
-| Stale planned | (a) Keep (b) Remove feature entirely (c) Skip |
-| Orphan doc | (a) Add to INDEX.md (b) Delete doc (c) Skip |
-| Missing doc | (a) Create from template (b) Remove INDEX entry (c) Skip |
-| Duplicate IDs | (a) Reassign one to new ID (b) Skip |
+1. **Status mismatch**: `active`/`amended` with empty `## Associated Files` → prompt to deprecate. `deprecated` with live code → prompt to reactivate. `amended` feature whose latest `[contract]` entry's implied `## Acceptance Criteria` are all ticked → prompt to flip to `active`.
+2. **Stale planned**: `planned` feature with no associated files and no change-history updates in 30+ days → prompt: (a) keep (b) remove feature entirely (c) skip.
 
-Apply resolutions. If any Likely contract drift findings exist, print the contract-drift follow-up message (see conventions) at the end.
+### Report
+
+Print a summary of what changed. If any Likely contract drift findings exist, print the contract-drift follow-up message (see conventions) so the user can run `/docflow:plan --amend`.
 
 List any features with status `planned` and suggest `/docflow:implement`.

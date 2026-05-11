@@ -107,6 +107,10 @@ docflow/
   references/
     feature-template.md    # Shared by init, plan, commit, sync
     conventions.md         # Feature IDs, file hash, Associated Files format, INDEX schema, Change History format, contract rules
+    reconcile.md           # Shared changeset-reconcile subroutine called by commit, implement, sync
+  scripts/
+    precheck.sh            # Unified pre-check (init-state / no-state / flow-active / free-active)
+    detect-drift.sh        # Whole-repo drift scanner — emits TSV records the LLM acts on
 ```
 
 ## Design Principles

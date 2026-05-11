@@ -6,8 +6,7 @@ allowed-tools: [Read, Glob, Grep, Bash, AskUserQuestion, Write]
 
 ## Pre-check
 
-1. `docs/INDEX.md` missing → STOP: "docflow is not initialized. Run `/docflow:init` first."
-2. `.docflow/state` exists → STOP: "A session is already active. Run `/docflow:plan` (flow) or `/docflow:commit` (free) to finish it, or delete `.docflow/state` to discard it."
+Run `bash scripts/precheck.sh no-state`. Non-zero exit → STOP and print the script's stderr verbatim.
 
 ## Steps
 
