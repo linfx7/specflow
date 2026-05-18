@@ -55,7 +55,7 @@ For each affected spec + file:
 
 ## Step 3 — Cross-spec hash consistency
 
-Because INDEX is one-row-per-path with a shared hash column, there is no "same path, different hashes across specs" failure mode to reconcile (unlike docflow, where each feature doc held its own hash). Step 3 simplifies to a single action:
+Because INDEX is one-row-per-path with a shared hash column, there is no "same path, different hashes across specs" failure mode to reconcile. Step 3 simplifies to a single action:
 
 For each path in the changeset whose row covers multiple specs, ensure the hash refresh in Step 2.1 was blocked by **no** spec's contract classification. If any covering spec was contract-breaking, the row's hash remains at its pre-change value and every covering spec gets a `contract_drift` entry (including the hash-only ones — they're fine, but the row is locked until the contract-breaking spec is amended).
 

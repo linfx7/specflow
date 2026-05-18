@@ -18,7 +18,7 @@ Feature docs drift. Long docs get ignored. Specflow keeps a small, machine-index
 | Command | Description |
 |---------|-------------|
 | `/specflow:init` | Scan the project, propose specs for existing modules, create `specs/INDEX` with a language preference and a sync baseline. |
-| `/specflow:spec [topic]` | Grill the user on a new behavior, then write the spec(s). `--amend <spec-id> [spec-id ...]` updates existing specs in place. |
+| `/specflow:spec [topic]` | Grill the user on a new behavior, then write the spec(s). `--amend <spec-id> [spec-id ...]` updates one or more existing specs in place. |
 | `/specflow:implement <spec-id>` | Implement one spec (or a contract-linked bundle) in a temporary worktree, using plan mode. Squashes back as a staged diff; never commits. |
 | `/specflow:sync` | Fast INDEX-driven drift scan. Refreshes hashes for hash-only changes; routes contract-breaking changes to `/specflow:spec --amend`. |
 
@@ -123,6 +123,5 @@ specflow/
 
 ## Acknowledgements
 
-- Derived from [docflow](https://github.com/linfx7/docflow); spec/implement flow inherits docflow's structure.
 - Grill-me interview style adopted from [grill-me](https://github.com/mattpocock/skills) by Matt Pocock.
 - Coding guidelines in the CLAUDE.md snippet adapted from [andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills) by Jiayuan Zhang.
