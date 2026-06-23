@@ -25,19 +25,19 @@ Inspect the surrounding conversation. If every user message so far is clearly En
 
 ### Analyze codebase
 
-Run `git ls-files` (respects `.gitignore`). Filter out non-source files per `references/conventions.md` → "Non-source files".
+Run `git ls-files` (respects `.gitignore`). Filter out non-source files per `${CLAUDE_PLUGIN_ROOT}/references/conventions.md` → "Non-source files".
 
 - **Fresh project** (no source beyond config/boilerplate): create `specs/`, write `specs/INDEX` with header-only content (no body rows), skip to **Update CLAUDE.md**.
 - **Existing codebase**: proceed to **Generate specs**.
 
 ### Generate specs
 
-Read `references/conventions.md` and `references/spec-template.md`.
+Read `${CLAUDE_PLUGIN_ROOT}/references/conventions.md` and `${CLAUDE_PLUGIN_ROOT}/references/spec-template.md` (via `cat`, so the variable expands — the Read tool does not expand it, and a bare `references/...` path would resolve against the user's project, not the plugin).
 
 1. Scan the project and identify distinct functional modules that qualify as specs (one self-contained behavioral contract — readable without other specs).
 2. Present the proposed split as a table: proposed ID (`spec-NNN-name` allocated sequentially from 001), name, brief description, covered files (production + tests). Use `AskUserQuestion` to let the user adjust — add / remove / rename / merge / split.
 3. After confirmation, batch-generate:
-   - One spec file per module at `specs/spec-NNN-name.md` from `references/spec-template.md`, with `status: active`. Infer `## Behavioral Contract` from the code — describe intent, not implementation. Write in the configured language. Behavioral Contract + Acceptance Criteria ≤ 40 lines.
+   - One spec file per module at `specs/spec-NNN-name.md` from `${CLAUDE_PLUGIN_ROOT}/references/spec-template.md`, with `status: active`. Infer `## Behavioral Contract` from the code — describe intent, not implementation. Write in the configured language. Behavioral Contract + Acceptance Criteria ≤ 40 lines.
    - `specs/INDEX` with:
      - Line 1: `# specflow index v1`
      - Line 2: `# lang: <code>    baseline: <HEAD commit short hash>`
@@ -47,11 +47,14 @@ Use `bash ${CLAUDE_PLUGIN_ROOT}/scripts/index.sh upsert <path> <spec-id> <hash>`
 
 ### Update CLAUDE.md
 
-Read `CLAUDE.md` and apply the specflow snippet:
+Specflow writes two **independent** marker blocks: a **usage** block (always) and an **optional coding-guidelines** block. Handle each block separately — for each one, read `CLAUDE.md` and:
 
-- Doesn't exist → create it with the snippet.
-- Contains `<!-- specflow:start -->` → diff against the snippet. Different → show the diff and use `AskUserQuestion` to confirm replacement. Identical → skip.
-- Otherwise → append.
+- Start marker absent → append the block (creating `CLAUDE.md` if it doesn't exist).
+- Start marker present → diff against the block below. Different → show the diff and use `AskUserQuestion` to confirm replacement. Identical → skip.
+
+The guidelines block is generic engineering advice, orthogonal to spec-sync; use `AskUserQuestion` to ask whether to include it (default: yes). The user can later delete or hand-edit it without touching the usage block.
+
+**Usage block** (always) — markers `<!-- specflow:start -->` / `<!-- specflow:end -->`:
 
 ```markdown
 <!-- specflow:start -->
@@ -63,7 +66,13 @@ Specs in `specs/` (indexed by `specs/INDEX`) are the reading-guide for committed
 - **Working on new behavior**: run `/specflow:spec <topic>` to pin down the contract before coding; `/specflow:implement <spec-id>` to build it.
 - **After changing code**: run `/specflow:sync` to surface contract drift. Contract-breaking changes route to `/specflow:spec --amend`.
 - `INDEX` header records the language for spec bodies; all new specs follow it.
+<!-- specflow:end -->
+```
 
+**Coding-guidelines block** (optional) — markers `<!-- specflow-guidelines:start -->` / `<!-- specflow-guidelines:end -->`:
+
+```markdown
+<!-- specflow-guidelines:start -->
 ## Coding Guidelines
 
 ### 1. Think Before Coding
@@ -121,7 +130,7 @@ For multi-step tasks, state a brief plan:
 ```
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
-<!-- specflow:end -->
+<!-- specflow-guidelines:end -->
 ```
 
 ### Report

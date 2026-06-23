@@ -24,7 +24,7 @@ Read the INDEX header `lang` via `bash ${CLAUDE_PLUGIN_ROOT}/scripts/index.sh he
 
 ### Explore before asking
 
-Read `references/conventions.md` and `specs/INDEX`. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/index.sh list-by-path <path>` for each file that the topic plausibly touches; load those specs read-only for context.
+Read `${CLAUDE_PLUGIN_ROOT}/references/conventions.md` (via `cat`) and `specs/INDEX`. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/index.sh list-by-path <path>` for each file that the topic plausibly touches; load those specs read-only for context.
 
 ### Grill the user
 
@@ -57,14 +57,14 @@ Present the summary; use `AskUserQuestion` to let the user adjust.
 
 ### Overlap check
 
-For each file the proposed work plausibly touches, run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/index.sh list-by-path <path>` to find other specs covering it. Apply contract classification (see `references/conventions.md`):
+For each file the proposed work plausibly touches, run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/index.sh list-by-path <path>` to find other specs covering it. Apply contract classification (see `${CLAUDE_PLUGIN_ROOT}/references/conventions.md`):
 
 - **Contract-breaking for an existing spec** → absorb that spec into the bundle. Grill the user on the new contract for it, update its `## Behavioral Contract` / `## Acceptance Criteria` / `## Change History`, flip its status from `active` → `amended`. Record `- <YYYY-MM-DD>: [contract] absorbed into <spec-id>` on the absorbed spec's Change History (where `<spec-id>` is the driving spec). Implemented together by passing the driving spec's ID to `/specflow:implement`.
 - **Hash-only** → no spec edit. INDEX hashes refresh during `implement`.
 
 ### Write specs
 
-For each NEW spec: create `specs/spec-NNN-name.md` from `references/spec-template.md`. Fill in frontmatter (`status: draft`), Behavioral Contract, Acceptance Criteria, Edge Cases (only if non-obvious), and seed Change History with `- <YYYY-MM-DD>: Initial spec.`
+For each NEW spec: create `specs/spec-NNN-name.md` from `${CLAUDE_PLUGIN_ROOT}/references/spec-template.md`. Fill in frontmatter (`status: draft`), Behavioral Contract, Acceptance Criteria, Edge Cases (only if non-obvious), and seed Change History with `- <YYYY-MM-DD>: Initial spec.`
 
 For each UPDATE (absorbed existing spec): edit the spec file in place. Update affected sections; append a Change History entry.
 
@@ -80,7 +80,7 @@ List all specs in the bundle with their statuses. Suggest `/specflow:implement <
 
 ### Load
 
-Read each spec file and `references/conventions.md`. No codebase exploration beyond what the specs themselves reference.
+Read each spec file and `${CLAUDE_PLUGIN_ROOT}/references/conventions.md` (via `cat`). No codebase exploration beyond what the specs themselves reference.
 
 ### Grill
 

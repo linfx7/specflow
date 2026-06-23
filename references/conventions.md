@@ -8,7 +8,7 @@
 
 Test files are not hashed — their INDEX row carries `-` in the hash column. Tests evolve alongside behavior, and tracking their hash produces constant false-positive drift.
 
-Note: `git hash-object` hashes raw working-tree bytes without applying `.gitattributes` clean filters. Specflow is internally consistent (same method on both sides of every comparison), so this doesn't cause drift — just be aware that a row's hash may not match `git rev-parse HEAD:<path>`.
+Note: `git hash-object` hashes raw working-tree bytes without applying `.gitattributes` clean filters. The hash comparison is internally consistent (raw bytes on both sides), so it doesn't by itself cause drift — just be aware a row's hash may not match `git rev-parse HEAD:<path>`. One caveat: `sync`'s fast path selects *which* files to scan via `git diff` (which **does** apply clean filters), so in a repo with clean filters (e.g. `autocrlf`) a raw-byte change that normalizes away can be skipped on the fast path; the baseline-less slow path still catches it.
 
 ## INDEX schema
 
@@ -83,9 +83,11 @@ Exclude only:
 - Specflow's own artifacts: `specs/**`
 - Git internals: `.git/**`
 - Generated lockfiles: `*.lock`, `*-lock.json`, `go.sum`
-- Boilerplate: `LICENSE*`, `CLAUDE.md`, root-level `README.md`
+- Boilerplate: `LICENSE*`, `CLAUDE.md` (any depth), root-level `README.md`
 
 Everything else is eligible — let `sync` flag it and ask the user rather than pre-filtering.
+
+> This list is implemented as a single `grep -Ev` regex in `detect-drift.sh` (UNTRACKED_SRC step). Keep the two in sync. Known gap: `pnpm-lock.yaml` / `bun.lockb` aren't matched by the lockfile patterns above — `sync` will surface them and you can choose "ignore".
 
 ## Change History entry format
 

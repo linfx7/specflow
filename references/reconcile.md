@@ -2,6 +2,8 @@
 
 Shared procedure for applying a changeset to specs + INDEX. Called by `implement` and `sync`. Keeps per-file classification, per-spec updates, and cross-spec hash handling in one place.
 
+> Path convention: every `index.sh ...` below means `bash ${CLAUDE_PLUGIN_ROOT}/scripts/index.sh ...`, and every `references/...` is a plugin file read via `cat ${CLAUDE_PLUGIN_ROOT}/references/...`. Bare paths here would resolve against the user's project, not the plugin.
+
 Both callers always pass `may_rewrite_contract = false`. Contract rewrites happen only inside `/specflow:spec` (default flow or `--amend`). So there is no "rewrite the contract in place" branch — contract-breaking findings always route the user to `/specflow:spec --amend`.
 
 All hashes read via `git hash-object <path> | cut -c1-7` per conventions.md's File hash rule. The working tree is the single source of truth.
@@ -16,13 +18,13 @@ All hashes read via `git hash-object <path> | cut -c1-7` per conventions.md's Fi
   - `implement`: `false` — everything in the staged diff must land under some spec.
   - `sync`: `true` — sync scans the whole repo and may legitimately see files the user wants to leave out.
 - `may_rewrite_contract`: always `false` for both callers.
-- `hash_source`: `worktree` (always, since we read via `git hash-object`).
+- `hash_source`: `working-tree` (always, since we read via `git hash-object`).
 
 ## Step 1 — Analyze and match
 
-Read `references/conventions.md` and `specs/INDEX` in parallel. Filter the changeset using the non-source patterns in conventions; partition the rest into production files and test files using the test patterns.
+Read `${CLAUDE_PLUGIN_ROOT}/references/conventions.md` (via `cat`) and `specs/INDEX` in parallel. Filter the changeset using the non-source patterns in conventions; partition the rest into production files and test files using the test patterns.
 
-Resolve each path's spec coverage via `scripts/index.sh list-by-path <path>`:
+Resolve each path's spec coverage via `bash ${CLAUDE_PLUGIN_ROOT}/scripts/index.sh list-by-path <path>`:
 
 - **Known path** (already in INDEX): auto-assign to every spec in its list. No prompt.
 - **Unknown path**: prompt with `AskUserQuestion`:

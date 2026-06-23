@@ -33,7 +33,7 @@ Test rows (hash `-`) participate only in `MISSING_FILE` (test vanished) and `UNT
 
 ### Resolve
 
-Read `references/conventions.md` and `references/reconcile.md` once. Classify each record.
+Read `${CLAUDE_PLUGIN_ROOT}/references/conventions.md` and `${CLAUDE_PLUGIN_ROOT}/references/reconcile.md` once (via `cat`). Sync uses reconcile.md as a **rules reference** — the hash-only-vs-contract-breaking classification (Step 2.2) and the deprecate-when-coverage-empties rule (Step 2.1) — and applies them to the drift *records* below. It does not execute reconcile's changeset-code (M/A/D/R) procedure; that path is for `implement`. The INDEX-integrity kinds (`MISSING_SPEC`, `ORPHAN_SPEC`, `DUP_ID`) are sync-only and not covered by reconcile. Classify each record.
 
 **Automatic — no prompt:**
 
@@ -48,7 +48,7 @@ Read `references/conventions.md` and `references/reconcile.md` once. Classify ea
 
 - `MISSING_FILE` → look for a rename match in the current `UNTRACKED_SRC` set by comparing `git hash-object`. Match found → auto-update the INDEX row's path (`index.sh remove <old>` + `index.sh upsert <new> <spec-id> <hash>`; do this for every spec in field 2). No match → `AskUserQuestion`: (a) drop the row entirely (`index.sh remove <path>`), (b) deprecate any spec whose remaining coverage is now empty (frontmatter `status: deprecated`, Change History entry), (c) skip.
 - `UNTRACKED_SRC` (after rename matching) → `AskUserQuestion`: (a) assign to an existing spec (append via `index.sh upsert <path> <spec-id> <hash>`), (b) ignore, (c) suggest `/specflow:spec` to cover it later.
-- `MISSING_SPEC` → `AskUserQuestion`: (a) recreate from `references/spec-template.md` (then /specflow:spec --amend it to flesh out), (b) remove the id from INDEX (`index.sh remove <path> <spec-id>` for every path listing that id), (c) skip.
+- `MISSING_SPEC` → `AskUserQuestion`: (a) recreate from `${CLAUDE_PLUGIN_ROOT}/references/spec-template.md` (then /specflow:spec --amend it to flesh out), (b) remove the id from INDEX (`index.sh remove <path> <spec-id>` for every path listing that id), (c) skip.
 - `ORPHAN_SPEC` → `AskUserQuestion`: (a) add to INDEX by assigning paths to the spec via `/specflow:spec --amend <spec-id>`, (b) delete the spec file, (c) skip.
 - `DUP_ID` → `AskUserQuestion`: (a) rename one spec file + update its frontmatter id to a fresh `next-id`, (b) skip.
 

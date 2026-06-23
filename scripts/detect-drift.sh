@@ -27,6 +27,11 @@ SPECS_DIR="specs"
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 TAB=$(printf '\t')
 
+# Operate from the repo root (the worktree's own root when run inside a worktree)
+# so relative paths like specs/INDEX resolve regardless of the caller's CWD.
+root=$(git rev-parse --show-toplevel 2>/dev/null || true)
+[ -n "$root" ] && cd "$root"
+
 if [ ! -f "$INDEX" ]; then
   echo "detect-drift: $INDEX not found" >&2
   exit 2
@@ -53,6 +58,12 @@ baseline=$("$SCRIPT_DIR/index.sh" header baseline)
 
 if [ -n "$baseline" ] && git cat-file -e "$baseline^{commit}" 2>/dev/null; then
   # Fast path: scan only files changed since baseline + newly-untracked.
+  # Caveat: `git diff` applies .gitattributes clean filters while the later
+  # HASH_MISMATCH check uses raw `git hash-object`. In a repo with clean filters
+  # (e.g. autocrlf), a file whose normalized content equals baseline but whose
+  # raw bytes changed won't appear here, so its raw-hash drift is skipped on the
+  # fast path (the slow path below would still catch it). Acceptable: such
+  # changes are cosmetic, and a baseline-less run reconciles them.
   (
     git diff --name-only "$baseline" 2>/dev/null
     git ls-files --others --exclude-standard 2>/dev/null
@@ -102,7 +113,9 @@ awk -F"$TAB" '
   while IFS= read -r orphan_id; do
     [ -n "$orphan_id" ] || continue
     status=$(awk -F"$TAB" -v id="$orphan_id" '$1==id {print $2; exit}' "$tmp/fm_status")
-    [ "$status" = "draft" ] && continue
+    # draft: code not written yet. deprecated: coverage intentionally emptied.
+    # Neither is an orphan -- only a non-draft, non-deprecated spec with no rows is.
+    case "$status" in draft|deprecated) continue ;; esac
     printf 'ORPHAN_SPEC\t-\t%s/%s.md\t-\t-\n' "$SPECS_DIR" "$orphan_id"
   done < "$tmp/fm_orphans"
 
@@ -135,7 +148,10 @@ awk -F"$TAB" '
   done < "$tmp/assoc_scan.tsv"
 
   # UNTRACKED_SRC: scan-set source files not covered by INDEX.
-  grep -Ev '^(specs/|\.git/)|\.lock$|-lock\.json$|^go\.sum$|^LICENSE($|[._-])|^CLAUDE\.md$|^README\.md$' "$tmp/scan_paths" > "$tmp/candidate_src" || true
+  # Exclusion list mirrors conventions.md "Non-source files" (authoritative there).
+  # ^LICENSE matches the LICENSE* glob; (^|/)CLAUDE\.md$ also excludes nested
+  # CLAUDE.md (Claude Code reads those as config, not source); README.md root-only.
+  grep -Ev '^(specs/|\.git/)|\.lock$|-lock\.json$|^go\.sum$|^LICENSE|(^|/)CLAUDE\.md$|^README\.md$' "$tmp/scan_paths" > "$tmp/candidate_src" || true
   awk -F"$TAB" '{print $1}' "$tmp/tests.tsv" | sort -u > "$tmp/index_test_paths"
   sort -u "$tmp/candidate_src" > "$tmp/candidate_sorted"
   comm -23 "$tmp/candidate_sorted" "$tmp/assoc_paths" \
