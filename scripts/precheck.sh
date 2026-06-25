@@ -19,6 +19,12 @@ fi
 
 INDEX="specs/INDEX"
 
+# Operate from the repo root (worktree root when inside a worktree) so the
+# relative specs/INDEX check is correct regardless of the caller's CWD. Without
+# this, running a command from a subdirectory misreports the init state.
+root=$(git rev-parse --show-toplevel 2>/dev/null || true)
+[ -n "$root" ] && cd "$root"
+
 fail() {
   printf '%s\n' "$1" >&2
   exit 1

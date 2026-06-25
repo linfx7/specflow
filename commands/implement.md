@@ -22,7 +22,7 @@ For each (other-spec, path) pair, classify whether implementing the current spec
 ## Working tree check
 
 1. Record the starting ref: `START=$(git symbolic-ref -q --short HEAD || git rev-parse HEAD)`. On a branch this is the branch name; on a detached HEAD it's the commit SHA. (Plain `git rev-parse --abbrev-ref HEAD` would wrongly return the literal string `HEAD` when detached, and the later `git checkout "$START"` would not return to the right commit.)
-2. Require `git status --porcelain` to be empty. Dirty tree → STOP: "Working tree has uncommitted changes. Commit or stash first so the implementation lands as a clean staged diff."
+2. Require `git status --porcelain` to be empty. Dirty tree → STOP: "Working tree has uncommitted changes or untracked files. Commit, stash (`git stash -u` to include untracked), or remove them so the implementation lands as a clean staged diff." (Untracked files matter: the `git add -A` below would otherwise sweep them into the diff. Gitignored files don't count.)
 
 ## Plan + implement on a throwaway branch
 
@@ -110,4 +110,5 @@ These edits are unstaged — the user stages them before committing.
 
 - Spec IDs shipped (bundle members)
 - Files touched (from the staged diff)
+- Any **deprecation candidates** reconcile flagged (specs whose last covered file was deleted) — list them and suggest `/specflow:sync` to retire them; implement does not change their status itself.
 - Close with: **"Code is staged. Spec + INDEX edits are unstaged. Review `git status` and commit at your own pace — specflow never commits for you."**

@@ -151,7 +151,7 @@ awk -F"$TAB" '
   # Exclusion list mirrors conventions.md "Non-source files" (authoritative there).
   # ^LICENSE matches the LICENSE* glob; (^|/)CLAUDE\.md$ also excludes nested
   # CLAUDE.md (Claude Code reads those as config, not source); README.md root-only.
-  grep -Ev '^(specs/|\.git/)|\.lock$|-lock\.json$|^go\.sum$|^LICENSE|(^|/)CLAUDE\.md$|^README\.md$' "$tmp/scan_paths" > "$tmp/candidate_src" || true
+  grep -Ev '^(specs/|\.git/)|\.lock$|-lock\.json$|^go\.sum$|^pnpm-lock\.yaml$|^bun\.lockb$|^LICENSE|(^|/)CLAUDE\.md$|^README\.md$' "$tmp/scan_paths" > "$tmp/candidate_src" || true
   awk -F"$TAB" '{print $1}' "$tmp/tests.tsv" | sort -u > "$tmp/index_test_paths"
   sort -u "$tmp/candidate_src" > "$tmp/candidate_sorted"
   comm -23 "$tmp/candidate_sorted" "$tmp/assoc_paths" \

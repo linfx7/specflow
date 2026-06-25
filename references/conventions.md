@@ -82,12 +82,12 @@ Exclude only:
 
 - Specflow's own artifacts: `specs/**`
 - Git internals: `.git/**`
-- Generated lockfiles: `*.lock`, `*-lock.json`, `go.sum`
+- Generated lockfiles: `*.lock`, `*-lock.json`, `go.sum`, `pnpm-lock.yaml`, `bun.lockb`
 - Boilerplate: `LICENSE*`, `CLAUDE.md` (any depth), root-level `README.md`
 
 Everything else is eligible — let `sync` flag it and ask the user rather than pre-filtering.
 
-> This list is implemented as a single `grep -Ev` regex in `detect-drift.sh` (UNTRACKED_SRC step). Keep the two in sync. Known gap: `pnpm-lock.yaml` / `bun.lockb` aren't matched by the lockfile patterns above — `sync` will surface them and you can choose "ignore".
+> This list is implemented as a single `grep -Ev` regex in `detect-drift.sh` (UNTRACKED_SRC step). Keep the two in sync.
 
 ## Change History entry format
 
